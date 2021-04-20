@@ -50,6 +50,11 @@ dependencies {
     //External requests
     implementation("io.micronaut:micronaut-http-client")
 
+    //Custom annotation
+    implementation("io.micronaut:micronaut-validation")
+    implementation("io.micronaut.beanvalidation:micronaut-hibernate-validator")
+    implementation("org.hibernate:hibernate-validator:6.1.6.Final")
+
 }
 
 
