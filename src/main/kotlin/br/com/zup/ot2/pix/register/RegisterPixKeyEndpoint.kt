@@ -5,8 +5,10 @@ import br.com.zup.ot2.RegisterPixKeyRequest
 import br.com.zup.ot2.RegisterPixKeyResponse
 import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
 import io.grpc.Status
+import io.grpc.Status.INVALID_ARGUMENT
 import io.grpc.stub.StreamObserver
 import io.micronaut.validation.Validated
+import java.lang.Exception
 import java.lang.RuntimeException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +24,8 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
         //Get data
         val pixKeyRequestDto = request?.toModel()
 
-        if(picKeyRepository.existsByPixKey(pixKeyRequestDto?.pixKey ?: throw IllegalStateException("Invalid Pix Key."))){
+        if(picKeyRepository.existsByPixKey(pixKeyRequestDto!!.pixKey))
+        {
             responseObserver?.onError(
                 Status.ALREADY_EXISTS
                     .withDescription("Pix Key already registered here.")
@@ -34,14 +37,19 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
         val clientAccountResponse = itauAccountsClient.findAccountByType(pixKeyRequestDto!!.clientId!!, pixKeyRequestDto.accountType!!.name)
 
         //Create our account model
-        val account = clientAccountResponse.body().toModel() ?: throw IllegalStateException("Client not found at Itau bank.")
+        val account = try { clientAccountResponse.body().toModel()
+        } catch (e: Exception) {
+            responseObserver?.onError(
+                Status.NOT_FOUND
+                    .withDescription("Client not found at Itau bank.")
+                    .asRuntimeException())
+            return
+        }
 
         //Create our pix key with data from Account (external) and request data
         val pixKey = pixKeyRequestDto.toModel(account)
 
         picKeyRepository.save(pixKey)
-
-        println(pixKey.toString())
 
         responseObserver?.onNext(RegisterPixKeyResponse.newBuilder()
             .setClientId(pixKey.clientId.toString())
