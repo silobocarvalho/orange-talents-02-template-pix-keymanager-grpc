@@ -1,8 +1,8 @@
 package br.com.zup.ot2.pix.register
 
+import br.com.zup.ot2.RegisterPixKeyGrpc
 import br.com.zup.ot2.RegisterPixKeyRequest
 import br.com.zup.ot2.RegisterPixKeyResponse
-import br.com.zup.ot2.RegisterPixKeyServiceGrpc
 import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
 import br.com.zup.ot2.pix.utils.PixKeyRepository
 import io.grpc.Status
@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val pixKeyRepository: PixKeyRepository): RegisterPixKeyServiceGrpc.RegisterPixKeyServiceImplBase(){
+class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val pixKeyRepository: PixKeyRepository): RegisterPixKeyGrpc.RegisterPixKeyImplBase(){
 
     override fun registerPixKey(
         request: RegisterPixKeyRequest?,

@@ -7,11 +7,11 @@ option objc_class_prefix = "HLW";
 
 package br.com.zup.ot2;
 
-service RegisterPixKeyService {
+service RegisterPixKey {
   rpc registerPixKey (RegisterPixKeyRequest) returns (RegisterPixKeyResponse) {}
 }
 
-service RemovePixKeyService  {
+service RemovePixKey  {
   rpc removePixKey (RemovePixKeyRequest) returns (RemovePixKeyResponse) {}
 }
 

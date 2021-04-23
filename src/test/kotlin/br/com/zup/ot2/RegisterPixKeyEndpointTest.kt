@@ -21,11 +21,12 @@ import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @MicronautTest(transactional = false)
-internal class RegisterPixKeyEndpointTest(
+class RegisterPixKeyEndpointTest(
     val pixKeyRepository: PixKeyRepository,
-    val grpcClient: RegisterPixKeyServiceGrpc.RegisterPixKeyServiceBlockingStub
+    val grpcClient: RegisterPixKeyGrpc.RegisterPixKeyBlockingStub
 ) {
 
     @Inject
@@ -43,10 +44,10 @@ internal class RegisterPixKeyEndpointTest(
     }
 
     @Factory
-    class Clients{
+    class ClientsRegister{
         @Bean
-        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): RegisterPixKeyServiceGrpc.RegisterPixKeyServiceBlockingStub{
-            return RegisterPixKeyServiceGrpc.newBlockingStub(channel)
+        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): RegisterPixKeyGrpc.RegisterPixKeyBlockingStub{
+            return RegisterPixKeyGrpc.newBlockingStub(channel)
         }
     }
 

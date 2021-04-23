@@ -1,7 +1,6 @@
-package br.com.zup.ot2.pix.register
+package br.com.zup.ot2.pix.remove
 
 import br.com.zup.ot2.*
-import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
 import br.com.zup.ot2.pix.utils.PixKeyRepository
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
@@ -10,7 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DeletePixKeyEndpoint(@Inject private val pixKeyRepository: PixKeyRepository): RemovePixKeyServiceGrpc.RemovePixKeyServiceImplBase(){
+class RemovePixKeyEndpoint(@Inject private val pixKeyRepository: PixKeyRepository): RemovePixKeyGrpc.RemovePixKeyImplBase(){
 
     override fun removePixKey(request: RemovePixKeyRequest?, responseObserver: StreamObserver<RemovePixKeyResponse>?) {
         val pixFromDb = request?.let {

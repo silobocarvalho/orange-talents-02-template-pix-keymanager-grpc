@@ -18,9 +18,9 @@ import java.util.*
 
 
 @MicronautTest(transactional = false)
-internal class RemovePixKeyEndpointTest(
+class RemovePixKeyEndpointTest(
     val pixKeyRepository: PixKeyRepository,
-    val grpcClient: RemovePixKeyServiceGrpc.RemovePixKeyServiceBlockingStub
+    val grpcClient: RemovePixKeyGrpc.RemovePixKeyBlockingStub
 ) {
 
     @BeforeEach
@@ -30,10 +30,10 @@ internal class RemovePixKeyEndpointTest(
 
 
     @Factory
-    class Clients{
+    class ClientsRemove{
         @Bean
-        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): RemovePixKeyServiceGrpc.RemovePixKeyServiceBlockingStub{
-            return RemovePixKeyServiceGrpc.newBlockingStub(channel)
+        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): RemovePixKeyGrpc.RemovePixKeyBlockingStub{
+            return RemovePixKeyGrpc.newBlockingStub(channel)
         }
     }
 
