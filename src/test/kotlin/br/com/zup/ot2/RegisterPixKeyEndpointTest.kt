@@ -1,14 +1,11 @@
 package br.com.zup.ot2
 
 import br.com.zup.ot2.pix.register.PixKey
-import br.com.zup.ot2.pix.register.PixKeyRepository
-import br.com.zup.ot2.pix.register.PixKeyRequestDto
+import br.com.zup.ot2.pix.utils.PixKeyRepository
 import br.com.zup.ot2.pix.register.externalrequests.AccountResponseDto
 import br.com.zup.ot2.pix.register.externalrequests.InstituicaoResponse
 import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
 import br.com.zup.ot2.pix.register.externalrequests.PixClient
-import br.com.zup.ot2.pix.register.toModel
-import io.grpc.Grpc
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -27,8 +24,8 @@ import javax.inject.Inject
 
 @MicronautTest(transactional = false)
 internal class RegisterPixKeyEndpointTest(
-    val grpcClient: PixKeyManagerGrpcServiceGrpc.PixKeyManagerGrpcServiceBlockingStub,
-    val pixKeyRepository: PixKeyRepository
+    val pixKeyRepository: PixKeyRepository,
+    val grpcClient: RegisterPixKeyServiceGrpc.RegisterPixKeyServiceBlockingStub
 ) {
 
     @Inject
@@ -48,8 +45,8 @@ internal class RegisterPixKeyEndpointTest(
     @Factory
     class Clients{
         @Bean
-        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): PixKeyManagerGrpcServiceGrpc.PixKeyManagerGrpcServiceBlockingStub{
-            return PixKeyManagerGrpcServiceGrpc.newBlockingStub(channel)
+        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): RegisterPixKeyServiceGrpc.RegisterPixKeyServiceBlockingStub{
+            return RegisterPixKeyServiceGrpc.newBlockingStub(channel)
         }
     }
 
@@ -265,4 +262,6 @@ internal class RegisterPixKeyEndpointTest(
             Assertions.assertFalse(pixKeyRepository.existsByPixKey(newFakePixKey.pixKey))
         }
     }
+
+
 }

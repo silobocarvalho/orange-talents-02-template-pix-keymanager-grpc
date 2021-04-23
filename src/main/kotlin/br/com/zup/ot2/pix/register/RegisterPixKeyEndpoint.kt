@@ -1,21 +1,18 @@
 package br.com.zup.ot2.pix.register
 
-import br.com.zup.ot2.PixKeyManagerGrpcServiceGrpc
 import br.com.zup.ot2.RegisterPixKeyRequest
 import br.com.zup.ot2.RegisterPixKeyResponse
+import br.com.zup.ot2.RegisterPixKeyServiceGrpc
 import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
+import br.com.zup.ot2.pix.utils.PixKeyRepository
 import io.grpc.Status
-import io.grpc.Status.INVALID_ARGUMENT
 import io.grpc.stub.StreamObserver
-import io.micronaut.validation.Validated
 import java.lang.Exception
-import java.lang.RuntimeException
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.transaction.Transactional
 
 @Singleton
-class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val picKeyRepository: PixKeyRepository): PixKeyManagerGrpcServiceGrpc.PixKeyManagerGrpcServiceImplBase(){
+class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val pixKeyRepository: PixKeyRepository): RegisterPixKeyServiceGrpc.RegisterPixKeyServiceImplBase(){
 
     override fun registerPixKey(
         request: RegisterPixKeyRequest?,
@@ -24,7 +21,7 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
         //Get data
         val pixKeyRequestDto = request?.toModel()
 
-        if(picKeyRepository.existsByPixKey(pixKeyRequestDto!!.pixKey))
+        if(pixKeyRepository.existsByPixKey(pixKeyRequestDto!!.pixKey))
         {
             responseObserver?.onError(
                 Status.ALREADY_EXISTS
@@ -49,7 +46,7 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
         //Create our pix key with data from Account (external) and request data
         val pixKey = pixKeyRequestDto.toModel(account)
 
-        picKeyRepository.save(pixKey)
+        pixKeyRepository.save(pixKey)
 
         responseObserver?.onNext(RegisterPixKeyResponse.newBuilder()
             .setClientId(pixKey.clientId.toString())

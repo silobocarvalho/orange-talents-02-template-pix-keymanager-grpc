@@ -27,7 +27,6 @@ data class PixKey(
     @Column(nullable = false)
     val keyType: KeyType,
 
-    @field:NotBlank
     @Column(unique = true, nullable = false)
     @field:Size(max = 77)
     @ValidPixKey
