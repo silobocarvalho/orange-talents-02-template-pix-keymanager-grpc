@@ -35,7 +35,7 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
         }
 
         //Request more info from a external system (account data)
-        val clientAccountResponse = itauAccountsClient.findAccountByType(pixKeyRequestDto!!.clientId!!, pixKeyRequestDto.accountType!!.name)
+        val clientAccountResponse = itauAccountsClient.findAccountByType(pixKeyRequestDto!!.clientId!!, pixKeyRequestDto.accountType!!.name) ?: throw  NoSuchElementException("Client not found at Itau bank.")
 
         //Create our account model
         val account = clientAccountResponse.body().toModel() ?: throw  NoSuchElementException("Client not found at Itau bank.")

@@ -19,6 +19,12 @@ interface BCB {
         produces = [MediaType.APPLICATION_XML],
         consumes = [MediaType.APPLICATION_XML])
     fun registerPixKey(@Body request: RegisterPixKeyBCBRequest): HttpResponse<RegisterPixKeyBCBResponse>
+
+    @Delete("/api/v1/pix/keys/{key}",
+        produces = [MediaType.APPLICATION_XML],
+        consumes = [MediaType.APPLICATION_XML]
+    )
+    fun deletePixKey(@PathVariable key: String, @Body request: DeletePixKeyRequest): HttpResponse<DeletePixKeyResponse>
 }
 
 
@@ -29,7 +35,6 @@ data class RegisterPixKeyBCBRequest(
     val bankAccount: PixKeyTypeBCB.BankAccount,
     val owner: PixKeyTypeBCB.Owner
 ) {
-
     companion object{
         fun of(pixKey: PixKey): RegisterPixKeyBCBRequest{
             return RegisterPixKeyBCBRequest(
@@ -51,6 +56,17 @@ data class RegisterPixKeyBCBRequest(
         }
     }
 }
+
+data class DeletePixKeyRequest(
+    val key: String,
+    val participant: String = Account.ITAU_UNIBANCO_ISPB,
+)
+
+data class DeletePixKeyResponse(
+    val key: String,
+    val participant: String,
+    val deletedAt: LocalDateTime
+)
 
 
 

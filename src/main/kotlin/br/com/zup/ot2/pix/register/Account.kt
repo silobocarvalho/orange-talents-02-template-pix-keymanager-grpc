@@ -39,5 +39,7 @@ class Account(
     @Column(nullable = false)
     val accountNumber: String
 ) {
-
+    companion object {
+        public val ITAU_UNIBANCO_ISPB: String = "60701190"
+    }
 }
