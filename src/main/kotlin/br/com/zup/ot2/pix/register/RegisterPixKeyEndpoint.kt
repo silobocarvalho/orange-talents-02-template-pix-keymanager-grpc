@@ -3,16 +3,24 @@ package br.com.zup.ot2.pix.register
 import br.com.zup.ot2.RegisterPixKeyGrpc
 import br.com.zup.ot2.RegisterPixKeyRequest
 import br.com.zup.ot2.RegisterPixKeyResponse
+import br.com.zup.ot2.exceptions.ErrorHandler
+import br.com.zup.ot2.exceptions.grpc.PixKeyAlreadyRegisteredException
+import br.com.zup.ot2.pix.register.externalrequests.BCB
 import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
+import br.com.zup.ot2.pix.register.externalrequests.RegisterPixKeyBCBRequest
 import br.com.zup.ot2.pix.utils.PixKeyRepository
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import java.lang.Exception
+import java.lang.IllegalArgumentException
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.transaction.Transactional
+import javax.validation.Valid
 
 @Singleton
-class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val pixKeyRepository: PixKeyRepository): RegisterPixKeyGrpc.RegisterPixKeyImplBase(){
+@ErrorHandler
+class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccountInformation, @Inject private val BCBInformation: BCB, @Inject private val pixKeyRepository: PixKeyRepository): RegisterPixKeyGrpc.RegisterPixKeyImplBase(){
 
     override fun registerPixKey(
         request: RegisterPixKeyRequest?,
@@ -23,30 +31,19 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
 
         if(pixKeyRepository.existsByPixKey(pixKeyRequestDto!!.pixKey))
         {
-            responseObserver?.onError(
-                Status.ALREADY_EXISTS
-                    .withDescription("Pix Key already registered here.")
-                    .asRuntimeException())
-            return
+            throw PixKeyAlreadyRegisteredException("Pix Key already registered here.")
         }
 
         //Request more info from a external system (account data)
         val clientAccountResponse = itauAccountsClient.findAccountByType(pixKeyRequestDto!!.clientId!!, pixKeyRequestDto.accountType!!.name)
 
         //Create our account model
-        val account = try { clientAccountResponse.body().toModel()
-        } catch (e: Exception) {
-            responseObserver?.onError(
-                Status.NOT_FOUND
-                    .withDescription("Client not found at Itau bank.")
-                    .asRuntimeException())
-            return
-        }
+        val account = clientAccountResponse.body().toModel() ?: throw  NoSuchElementException("Client not found at Itau bank.")
 
         //Create our pix key with data from Account (external) and request data
         val pixKey = pixKeyRequestDto.toModel(account)
 
-        pixKeyRepository.save(pixKey)
+        SaveAndPublishToBCB(pixKey)
 
         responseObserver?.onNext(RegisterPixKeyResponse.newBuilder()
             .setClientId(pixKey.clientId.toString())
@@ -54,5 +51,13 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
             .build())
 
         responseObserver?.onCompleted()
+    }
+
+    @Transactional
+    private fun SaveAndPublishToBCB(
+        @Valid pixKey: PixKey
+    ){
+        pixKeyRepository.save(pixKey)
+        val bcbResponse = BCBInformation.registerPixKey(RegisterPixKeyBCBRequest.of(pixKey)) ?: throw IllegalArgumentException("Error saving PixKey into BCB system.")
     }
 }

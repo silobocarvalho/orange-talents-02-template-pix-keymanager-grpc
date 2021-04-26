@@ -1,11 +1,8 @@
 package br.com.zup.ot2
 
 import br.com.zup.ot2.pix.register.PixKey
+import br.com.zup.ot2.pix.register.externalrequests.*
 import br.com.zup.ot2.pix.utils.PixKeyRepository
-import br.com.zup.ot2.pix.register.externalrequests.AccountResponseDto
-import br.com.zup.ot2.pix.register.externalrequests.InstituicaoResponse
-import br.com.zup.ot2.pix.register.externalrequests.ItauAccountInformation
-import br.com.zup.ot2.pix.register.externalrequests.PixClient
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -17,11 +14,17 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.*
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyObject
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.any
+import org.testcontainers.shaded.org.bouncycastle.asn1.x500.style.RFC4519Style.owner
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.reflect.jvm.internal.impl.load.java.structure.JavaClass
 
 @MicronautTest(transactional = false)
 class RegisterPixKeyEndpointTest(
@@ -32,6 +35,9 @@ class RegisterPixKeyEndpointTest(
     @Inject
     lateinit var itauClient: ItauAccountInformation
 
+    @Inject
+    lateinit var BCBClient: BCB
+
     @BeforeEach
     fun setup(){
         pixKeyRepository.deleteAll()
@@ -41,6 +47,11 @@ class RegisterPixKeyEndpointTest(
     @MockBean(ItauAccountInformation::class)
     fun itauClient(): ItauAccountInformation? {
         return Mockito.mock(ItauAccountInformation::class.java)
+    }
+
+    @MockBean(BCB::class)
+    fun BCBClient(): BCB? {
+        return Mockito.mock(BCB::class.java)
     }
 
     @Factory
@@ -62,6 +73,18 @@ class RegisterPixKeyEndpointTest(
         )
     }
 
+    //Create a expected response from external system
+    private fun fakeDataAccountResponseBCB(): RegisterPixKeyBCBResponse {
+        return RegisterPixKeyBCBResponse(
+            keyType = PixKeyTypeBCB.CPF,
+            key = "63657520325",
+            bankAccount = bankAccount(),
+            owner = owner(),
+            createdAt = LocalDateTime.now()
+        )
+    }
+
+
     val fakePixKeyRequest = RegisterPixKeyRequest
         .newBuilder()
         .setClientId("5260263c-a3c1-4727-ae32-3bdb2538841b")
@@ -69,6 +92,29 @@ class RegisterPixKeyEndpointTest(
         .setPixKey("63657520325")
         .setAccountType(AccountType.CONTA_CORRENTE)
         .build()
+
+    var fakePixKeyRequestBCB = RegisterPixKeyBCBRequest(
+            keyType = KeyType.CPF,
+            key = "63657520325",
+        bankAccount = bankAccount(),
+            owner = owner())
+
+    private fun owner(): PixKeyTypeBCB.Owner {
+        return PixKeyTypeBCB.Owner(
+            type = PixKeyTypeBCB.Owner.OwnerType.NATURAL_PERSON,
+            name = "Rafael Ponte",
+            taxIdNumber = "63657520325"
+        )
+    }
+
+    private fun bankAccount(): PixKeyTypeBCB.BankAccount {
+        return PixKeyTypeBCB.BankAccount(
+            participant = "63657520325",
+            branch = "001",
+            accountNumber = "123455",
+            accountType = PixKeyTypeBCB.BankAccount.AccountTypeBCB.CACC
+        )
+    }
 
     @Test
     fun `should register a new pix key using CPF`(){
@@ -111,6 +157,10 @@ class RegisterPixKeyEndpointTest(
 
         `when`(itauClient.findAccountByType(clientId = fakePixKeyRequest.clientId, accountType = AccountType.CONTA_CORRENTE.toString()))
             .thenReturn(HttpResponse.ok(fakeDataAccountResponseItau()))
+
+        val newFakePixRequestBCB = fakePixKeyRequestBCB.copy(keyType = KeyType.CELULAR, key = "+5585999067836")
+
+        `when`(BCBClient.registerPixKey(newFakePixRequestBCB)).thenReturn(HttpResponse.ok(fakeDataAccountResponseBCB()))
 
         var newFakePixKey = fakePixKeyRequest.toBuilder()
         newFakePixKey.pixKey = "+5585999067836"

@@ -41,6 +41,7 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("com.h2database:h2")
     /**
      * Test dependencies
      */
@@ -50,6 +51,7 @@ dependencies {
     testImplementation("com.h2database:h2")
     testImplementation("org.hamcrest:hamcrest-core:2.2")
     testImplementation("org.testcontainers:junit-jupiter")
+    
 }
 
 
