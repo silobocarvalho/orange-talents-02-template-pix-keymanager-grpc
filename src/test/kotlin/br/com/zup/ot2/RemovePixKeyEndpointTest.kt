@@ -1,9 +1,12 @@
 package br.com.zup.ot2
 
+import br.com.zup.ot2.pix.register.Account
 import br.com.zup.ot2.pix.register.PixKey
 import br.com.zup.ot2.pix.register.externalrequests.*
 import br.com.zup.ot2.pix.utils.PixKeyRepository
 import io.grpc.ManagedChannel
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.micronaut.grpc.annotation.GrpcChannel
@@ -14,6 +17,7 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import java.time.LocalDateTime
 import java.util.*
@@ -41,19 +45,25 @@ class RemovePixKeyEndpointTest(
     }
 
     @Inject
+    lateinit var itauClient: ItauAccountInformation
+    @MockBean(ItauAccountInformation::class)
+    fun itauClient(): ItauAccountInformation? {
+        return Mockito.mock(ItauAccountInformation::class.java)
+    }
+
+
+    @Inject
     lateinit var BCBClient: BCB
     @MockBean(BCB::class)
     fun BCBClient(): BCB? {
         return Mockito.mock(BCB::class.java)
     }
     //Create a expected response from external system
-    private fun fakeDataAccountResponseBCB(): RegisterPixKeyBCBResponse {
-        return RegisterPixKeyBCBResponse(
-            keyType = PixKeyTypeBCB.CPF,
+    private fun fakeDataAccountResponseBCB(): DeletePixKeyResponse {
+        return DeletePixKeyResponse(
             key = "63657520325",
-            bankAccount = bankAccount(),
-            owner = owner(),
-            createdAt = LocalDateTime.now()
+            participant = Account.ITAU_UNIBANCO_ISPB,
+            deletedAt = LocalDateTime.now()
         )
     }
 
@@ -73,16 +83,6 @@ class RemovePixKeyEndpointTest(
             accountType = PixKeyTypeBCB.BankAccount.AccountTypeBCB.CACC
         )
     }
-
-    object MockitoHelper {
-        fun <T> anyObject(): T {
-            Mockito.any<T>()
-            return uninitialized()
-        }
-        @Suppress("UNCHECKED_CAST")
-        fun <T> uninitialized(): T =  null as T
-    }
-
 
 
     //Create a expected response from external system
@@ -104,10 +104,21 @@ class RemovePixKeyEndpointTest(
         .setAccountType(AccountType.CONTA_CORRENTE)
         .build()
 
+    object MockitoHelper {
+        fun <T> anyObject(): T {
+            Mockito.any<T>()
+            return uninitialized()
+        }
+        @Suppress("UNCHECKED_CAST")
+        fun <T> uninitialized(): T =  null as T
+    }
+
 
     @Test
     fun `should REMOVE a pix key using CPF`(){
 
+        Mockito.`when`(BCBClient.deletePixKey(Mockito.anyString(), MockitoHelper.anyObject()))
+            .thenReturn(HttpResponse.ok(fakeDataAccountResponseBCB()))
 
         val pixKey = PixKey(
             clientId = UUID.fromString(fakePixKeyRequest.clientId),
@@ -137,6 +148,9 @@ class RemovePixKeyEndpointTest(
     @Test
     fun `should REMOVE a pix key using Email`(){
 
+        Mockito.`when`(BCBClient.deletePixKey(Mockito.anyString(), MockitoHelper.anyObject()))
+            .thenReturn(HttpResponse.ok(fakeDataAccountResponseBCB()))
+
         val pixKey = PixKey(
             clientId = UUID.fromString(fakePixKeyRequest.clientId),
             keyType = KeyType.EMAIL,
@@ -164,6 +178,9 @@ class RemovePixKeyEndpointTest(
 
     @Test
     fun `should REMOVE a pix key using Phone Number`(){
+
+        Mockito.`when`(BCBClient.deletePixKey(Mockito.anyString(), MockitoHelper.anyObject()))
+            .thenReturn(HttpResponse.ok(fakeDataAccountResponseBCB()))
 
         val pixKey = PixKey(
             clientId = UUID.fromString(fakePixKeyRequest.clientId),
@@ -196,6 +213,9 @@ class RemovePixKeyEndpointTest(
     @Test
     fun `should REMOVE a pix key using Aleatory Key`(){
 
+        Mockito.`when`(BCBClient.deletePixKey(Mockito.anyString(), MockitoHelper.anyObject()))
+            .thenReturn(HttpResponse.ok(fakeDataAccountResponseBCB()))
+
         val pixKey = PixKey(
             clientId = UUID.fromString(fakePixKeyRequest.clientId),
             keyType = KeyType.ALEATORIA,
@@ -219,6 +239,41 @@ class RemovePixKeyEndpointTest(
             Assertions.assertEquals(this.clientId, fakeRemovePixKeyRequest.clientId)
             Assertions.assertFalse(pixKeyRepository.existsByPixKey(pixKey.id.toString()))
         }
+    }
+
+    @Test
+    fun `should NOT REMOVE a pix key if not possible to communicate with BCB`(){
+
+        Mockito.`when`(BCBClient.deletePixKey(Mockito.anyString(), MockitoHelper.anyObject()))
+            .thenReturn(HttpResponse.badRequest())
+
+        val pixKey = PixKey(
+            clientId = UUID.fromString(fakePixKeyRequest.clientId),
+            keyType = fakePixKeyRequest.keyType,
+            pixKey = fakePixKeyRequest.pixKey,
+            accountType = fakePixKeyRequest.accountType,
+            account = fakeDataAccountResponseItau().toModel()
+        )
+
+        pixKeyRepository.save(pixKey) //after saved, the object reflects the database, containing a Id now
+
+        val fakeRemovePixKeyRequest = RemovePixKeyRequest
+            .newBuilder()
+            .setClientId("5260263c-a3c1-4727-ae32-3bdb2538841b")
+            .setPixId(pixKey.id.toString())
+            .build()
+
+        val error = assertThrows<StatusRuntimeException> {
+            val registerPixKeyResponse = grpcClient.removePixKey(fakeRemovePixKeyRequest)
+        }
+
+        with(error){
+            Assertions.assertEquals(Status.NOT_FOUND.code, status.code)
+            Assertions.assertFalse(pixKeyRepository.existsByPixKey(pixKey.id.toString()))
+        }
+
+
+
     }
 
 }
