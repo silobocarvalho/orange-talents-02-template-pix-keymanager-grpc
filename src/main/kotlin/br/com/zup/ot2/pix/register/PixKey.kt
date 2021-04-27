@@ -30,7 +30,7 @@ data class PixKey(
     @Column(unique = true, nullable = false)
     @field:Size(max = 77)
     @ValidPixKey
-    val pixKey: String,
+    private var pixKey: String,
 
     @field:NotNull
     @Enumerated(EnumType.STRING)
@@ -49,6 +49,13 @@ data class PixKey(
     val createdAt: LocalDateTime = LocalDateTime.now()
     override fun toString(): String {
         return "PixKey(id=$id, clientId=$clientId, keyType=$keyType, pixKey='$pixKey', accountType=$accountType, accountNumber=${account.accountNumber}, agencyNumber=${account.agencyNumber}, clientCpf=${account.clientCpf}, accountName=${account.clientName}, institutionName=${account.institutionName}, institutionIspb=${account.institutionIspb}, createdAt=$createdAt)"
+    }
+
+    fun updateKey(key: String){
+        if(keyType.name.equals(KeyType.ALEATORIA)){
+            this.pixKey = key
+        }
+
     }
 
 

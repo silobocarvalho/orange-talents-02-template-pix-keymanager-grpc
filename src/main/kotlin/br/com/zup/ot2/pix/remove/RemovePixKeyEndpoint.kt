@@ -44,10 +44,12 @@ class RemovePixKeyEndpoint(@Inject private val pixKeyRepository: PixKeyRepositor
 
     @Transactional
     private fun removePixAndPublishToBCB(pixFromDb: PixKey) {
-        pixKeyRepository.delete(pixFromDb)
+
         BCBInformation.deletePixKey(key = pixFromDb.pixKey, request = DeletePixKeyRequest(
             key = pixFromDb.pixKey
         ))
+
+        pixKeyRepository.delete(pixFromDb)
 
     }
 

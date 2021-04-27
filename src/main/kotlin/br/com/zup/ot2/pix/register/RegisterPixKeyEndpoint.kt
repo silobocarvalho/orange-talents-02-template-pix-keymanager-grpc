@@ -1,5 +1,6 @@
 package br.com.zup.ot2.pix.register
 
+import br.com.zup.ot2.KeyType
 import br.com.zup.ot2.RegisterPixKeyGrpc
 import br.com.zup.ot2.RegisterPixKeyRequest
 import br.com.zup.ot2.RegisterPixKeyResponse
@@ -57,7 +58,13 @@ class RegisterPixKeyEndpoint(@Inject private val itauAccountsClient: ItauAccount
     private fun SaveAndPublishToBCB(
         @Valid pixKey: PixKey
     ){
-        pixKeyRepository.save(pixKey)
+
         val bcbResponse = BCBInformation.registerPixKey(RegisterPixKeyBCBRequest.of(pixKey)) ?: throw IllegalArgumentException("Error saving PixKey into BCB system.")
+        if(bcbResponse.body().keyType.equals(KeyType.ALEATORIA)){
+            pixKey.updateKey(bcbResponse.body().key)
+        }
+
+        pixKeyRepository.save(pixKey)
+
     }
 }
