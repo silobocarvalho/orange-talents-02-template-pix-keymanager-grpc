@@ -30,7 +30,7 @@ data class PixKey(
     @Column(unique = true, nullable = false)
     @field:Size(max = 77)
     @ValidPixKey
-    private var pixKey: String,
+    var pixKey: String,
 
     @field:NotNull
     @Enumerated(EnumType.STRING)
