@@ -205,9 +205,6 @@ class RemovePixKeyEndpointTest(
             Assertions.assertEquals(this.clientId, fakeRemovePixKeyRequest.clientId)
             Assertions.assertFalse(pixKeyRepository.existsByPixKey(pixKey.id.toString()))
         }
-
-
-
     }
 
     @Test
